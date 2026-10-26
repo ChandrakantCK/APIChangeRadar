@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Radar.Api/Radar.Api.csproj" />
+    <Project Path="src/Radar.Application/Radar.Application.csproj" />
+    <Project Path="src/Radar.Diffing/Radar.Diffing.csproj" />
+    <Project Path="src/Radar.Domain/Radar.Domain.csproj" />
+    <Project Path="src/Radar.Infrastructure/Radar.Infrastructure.csproj" />
+    <Project Path="src/Radar.Worker/Radar.Worker.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Radar.Diffing.Tests/Radar.Diffing.Tests.csproj" />
+    <Project Path="tests/Radar.Integration.Tests/Radar.Integration.Tests.csproj" />
+  </Folder>
+</Solution>

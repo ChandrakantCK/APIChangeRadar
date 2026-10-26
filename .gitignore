@@ -482,3 +482,13 @@ $RECYCLE.BIN/
 *.swp
 
 # --- APIChangeRadar ---
+node_modules/
+.next/
+out/
+web/.vercel/
+.env
+.env.*
+!.env.example
+appsettings.*.local.json
+.DS_Store
+Thumbs.db
