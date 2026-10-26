@@ -55,3 +55,12 @@ jobs:
 
       - name: Build
         run: npm run build
+  
+  docker:
+    name: Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build API image
+        run: docker build -t radar-api:ci .
