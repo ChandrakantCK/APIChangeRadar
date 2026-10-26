@@ -1,4 +1,4 @@
-const apiUrl = process.env.API_URL ?? "http://localhost:5214";
+const apiUrl = (process.env.API_URL ?? "http://localhost:5214").replace(/\/+$/, "");
 
 async function getApiHealth(): Promise<string> {
   try {
