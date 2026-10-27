@@ -7,7 +7,7 @@ on:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -64,3 +64,26 @@ jobs:
 
       - name: Build API image
         run: docker build -t radar-api:ci .
+
+  migrate:
+    name: Migrate production database
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [backend, frontend, docker]
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: |
+          dotnet tool restore
+          dotnet restore
+
+      - name: Apply EF Core migrations
+        env:
+          ConnectionStrings__Database: ${{ secrets.DATABASE_CONNECTION_STRING }}
+        run: dotnet ef database update --project src/Radar.Infrastructure --startup-project src/Radar.Api
