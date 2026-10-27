@@ -1,4 +1,5 @@
 using Radar.Infrastructure;
+using Radar.Api.Endpoints;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,5 +20,6 @@ app.MapGet("/", () => Results.Ok(new { name = "API Change Radar", status = "runn
    .WithName("GetRoot");
 
 app.MapHealthChecks("/health");
+app.MapAuthEndpoints();
 
 app.Run();
