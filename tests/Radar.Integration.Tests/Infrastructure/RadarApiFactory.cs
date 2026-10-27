@@ -4,6 +4,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Radar.Infrastructure.Persistence;
 using Testcontainers.PostgreSql;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Radar.Application.Abstractions;
 
 namespace Radar.Integration.Tests.Infrastructure
 {
@@ -15,6 +18,7 @@ namespace Radar.Integration.Tests.Infrastructure
     {
         private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17-alpine")
             .Build();
+        public FakeEmailSender Emails { get; } = new();
 
         public async Task InitializeAsync()
         {
@@ -30,6 +34,12 @@ namespace Radar.Integration.Tests.Infrastructure
         {
             builder.UseEnvironment("Testing");
             builder.UseSetting("ConnectionStrings:Database", _postgres.GetConnectionString());
+            // Swap the real email sender for one that records messages in memory.
+            builder.ConfigureTestServices(services =>
+            {
+                services.RemoveAll<IEmailSender>();
+                services.AddSingleton<IEmailSender>(Emails);
+            });
         }
 
         async Task IAsyncLifetime.DisposeAsync()

@@ -11,13 +11,37 @@ namespace Radar.Api.Endpoints
 
             group.MapPost("/signup", SignUp).WithName("SignUp");
 
+            group.MapPost("/verify-email", VerifyEmail).WithName("VerifyEmail");
+
+            group.MapPost("/resend-verification", ResendVerification).WithName("ResendVerification");
+
             return app;
         }
 
+        private static async Task<Results<NoContent, ValidationProblem>> VerifyEmail(VerifyEmailRequest request, IAccountService accounts, CancellationToken cancellationToken)
+        {
+            if (await accounts.VerifyEmailAsync(request, cancellationToken))
+            {
+                return TypedResults.NoContent();
+            }
+
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["InvalidToken"] = ["This verification link is invalid or has expired. Request a new one."],
+            });
+        }
+
+        private static async Task<Accepted> ResendVerification(
+            ResendVerificationEmailRequest request, IAccountService accounts, CancellationToken cancellationToken)
+        {
+            await accounts.ResendVerificationEmailAsync(request, cancellationToken);
+
+            // Always the same answer, whether or not the email has an account.
+            return TypedResults.Accepted((string?)null);
+        }
+
         private static async Task<Results<Created<SignUpResponse>, ValidationProblem>> SignUp(
-            SignUpRequest request,
-            IAccountService accounts,
-            CancellationToken cancellationToken)
+            SignUpRequest request, IAccountService accounts, CancellationToken cancellationToken)
         {
             var result = await accounts.SignUpAsync(request, cancellationToken);
 
