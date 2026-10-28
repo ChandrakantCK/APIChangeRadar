@@ -2,6 +2,10 @@
 using Radar.Application.Accounts;
 using Radar.Api.Authentication;
 using Radar.Api.RateLimiting;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.Options;
+using Radar.Infrastructure;
 
 namespace Radar.Api.Endpoints
 {
@@ -26,7 +30,61 @@ namespace Radar.Api.Endpoints
 
             group.MapPost("/logout", Logout).WithName("Logout");
 
+            group.MapGet("/github/start", GitHubStart).WithName("GitHubStart");
+
+            group.MapGet("/github/complete", GitHubComplete).WithName("GitHubComplete");
+
             return app;
+        }
+
+        // Step 1: send the browser to GitHub. The handler adds client_id, redirect_uri and a random "state".
+        private static async Task<IResult> GitHubStart(IAuthenticationSchemeProvider schemes)
+        {
+            if (await schemes.GetSchemeAsync(GitHubLogin.Scheme) is null)
+            {
+                return TypedResults.NotFound(); // GitHub sign-in isn't configured here
+            }
+
+            var properties = new AuthenticationProperties { RedirectUri = "/auth/github/complete" };
+            return TypedResults.Challenge(properties, [GitHubLogin.Scheme]);
+        }
+
+        // Step 3 (after GitHub's handler finished step 2 at /auth/github/callback): turn the GitHub identity
+        // into our user + session, then send the browser back to the web app.
+        private static async Task<IResult> GitHubComplete(HttpContext http, IAccountService accounts, IOptions<AppOptions> appOptions, CancellationToken cancellationToken)
+        {
+            var web = appOptions.Value.WebBaseUrl.TrimEnd('/');
+
+            var external = await http.AuthenticateAsync(GitHubLogin.ExternalCookieScheme);
+
+            // The temporary external cookie has done its job, whatever happens next.
+            await http.SignOutAsync(GitHubLogin.ExternalCookieScheme);
+
+            var providerKey = external.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!external.Succeeded || providerKey is null)
+            {
+                return TypedResults.Redirect($"{web}/login?error=github");
+            }
+
+            var result = await accounts.ExternalLoginAsync(
+                new ExternalLoginRequest(GitHubLogin.Scheme, providerKey, external.Principal!.FindFirstValue(ClaimTypes.Email)),
+                cancellationToken);
+
+            if (result.Status != LoginStatus.Succeeded)
+            {
+                var error = result.Status switch
+                {
+                    LoginStatus.EmailNotConfirmed => "github-no-verified-email",
+                    LoginStatus.LockedOut => "locked",
+                    _ => "github",
+                };
+                return TypedResults.Redirect($"{web}/login?error={error}");
+            }
+
+            // Same session as a password login: the refresh cookie. The web app's /auth/callback page
+            // then calls POST /auth/refresh to get its first access token (Step 11).
+            RefreshTokenCookie.Set(http.Response, result.RefreshToken!);
+            return TypedResults.Redirect($"{web}/auth/callback");
         }
 
         private static async Task<NoContent> Logout(HttpContext http, IAccountService accounts, CancellationToken cancellationToken)

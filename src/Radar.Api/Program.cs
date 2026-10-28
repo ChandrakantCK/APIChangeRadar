@@ -10,6 +10,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddJwtAuthentication();
+builder.Services.AddGitHubLogin(builder.Configuration);
 builder.Services.AddApiRateLimiting(builder.Configuration);
 
 // Behind Cloudflare + Render: recover the real client IP and https scheme from the proxies' headers.
