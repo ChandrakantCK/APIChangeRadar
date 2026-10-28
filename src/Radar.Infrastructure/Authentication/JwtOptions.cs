@@ -17,6 +17,9 @@ namespace Radar.Infrastructure.Authentication
 
         public int AccessTokenMinutes { get; set; } = 15;
 
+        /// <summary>How long a refresh token (and so a login session) lasts without being used.</summary>
+        public int RefreshTokenDays { get; set; } = 14;
+
         public bool HasValidSigningKey()
         {
             try

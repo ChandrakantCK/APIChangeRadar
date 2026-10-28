@@ -73,6 +73,7 @@ namespace Radar.Infrastructure
             services.AddSingleton(TimeProvider.System);
             services.AddSingleton<ITokenService, JwtTokenService>();
 
+            services.AddScoped<RefreshTokenService>();
             services.AddScoped<IAccountService, AccountService>();
 
             services.AddHealthChecks()

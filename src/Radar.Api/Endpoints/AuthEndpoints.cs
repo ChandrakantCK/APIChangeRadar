@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http.HttpResults;
 using Radar.Application.Accounts;
+using Radar.Api.Authentication;
 
 namespace Radar.Api.Endpoints
 {
@@ -16,6 +17,8 @@ namespace Radar.Api.Endpoints
             group.MapPost("/resend-verification", ResendVerification).WithName("ResendVerification");
 
             group.MapPost("/login", Login).WithName("Login");
+
+            group.MapPost("/refresh", Refresh).WithName("Refresh");
 
             return app;
         }
@@ -61,9 +64,14 @@ namespace Radar.Api.Endpoints
                 new SignUpResponse(result.UserId, result.OrganizationId));
         }
 
-        private static async Task<Results<Ok<LoginResponse>, ProblemHttpResult>> Login(LoginRequest request, IAccountService accounts, CancellationToken cancellationToken)
+        private static async Task<Results<Ok<LoginResponse>, ProblemHttpResult>> Login(LoginRequest request, IAccountService accounts, HttpResponse response, CancellationToken cancellationToken)
         {
             var result = await accounts.LoginAsync(request, cancellationToken);
+
+            if (result.Status == LoginStatus.Succeeded)
+            {
+                RefreshTokenCookie.Set(response, result.RefreshToken!);
+            }
 
             return result.Status switch
             {
@@ -85,6 +93,27 @@ namespace Radar.Api.Endpoints
                     detail: "Invalid email or password.",
                     statusCode: StatusCodes.Status401Unauthorized),
             };
+        }
+
+        private static async Task<Results<Ok<LoginResponse>, ProblemHttpResult>> Refresh(HttpContext http, IAccountService accounts, CancellationToken cancellationToken)
+        {
+            var refreshToken = RefreshTokenCookie.Read(http.Request);
+            var result = refreshToken is null
+                ? RefreshResult.Failure(RefreshStatus.Invalid)
+                : await accounts.RefreshAsync(refreshToken, cancellationToken);
+
+            if (result.Status != RefreshStatus.Succeeded)
+            {
+                // Whatever went wrong, this browser's session is over: clear the cookie.
+                RefreshTokenCookie.Delete(http.Response);
+                return TypedResults.Problem(
+                    title: "Session expired",
+                    detail: "Please sign in again.",
+                    statusCode: StatusCodes.Status401Unauthorized);
+            }
+
+            RefreshTokenCookie.Set(http.Response, result.RefreshToken!);
+            return TypedResults.Ok(new LoginResponse(result.AccessToken!.Token, "Bearer", result.AccessToken.ExpiresAt));
         }
     }
 
