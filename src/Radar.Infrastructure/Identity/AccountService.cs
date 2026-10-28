@@ -1,14 +1,15 @@
-﻿using System.Buffers.Text;
-using System.Net;
-using System.Text;
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Radar.Application.Abstractions;
 using Radar.Application.Accounts;
+using Radar.Domain.Auditing;
 using Radar.Domain.Organizations;
 using Radar.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
+using System.Buffers.Text;
+using System.Net;
+using System.Text;
 
 namespace Radar.Infrastructure.Identity
 {
@@ -153,6 +154,7 @@ namespace Radar.Infrastructure.Identity
 
                 db.Organizations.Add(organization);
                 db.Memberships.Add(new Membership(organization.Id, user.Id, MembershipRole.Owner));
+                db.AuditEntries.Add(new AuditEntry(organization.Id, user.Id, "organization.created", organization.Name, ipAddress: null));
                 await db.SaveChangesAsync(cancellationToken);
 
                 await transaction.CommitAsync(cancellationToken);
