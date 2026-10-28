@@ -12,6 +12,7 @@ namespace Radar.Infrastructure.Persistence
         public DbSet<Organization> Organizations => Set<Organization>();
         public DbSet<Membership> Memberships => Set<Membership>();
         public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
+        public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

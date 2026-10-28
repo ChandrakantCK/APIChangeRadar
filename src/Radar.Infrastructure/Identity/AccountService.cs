@@ -13,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Radar.Infrastructure.Identity
 {
     internal sealed class AccountService(AppDbContext db, UserManager<ApplicationUser> userManager, IEmailSender emailSender,
-        IOptions<AppOptions> appOptions, ILogger<AccountService> logger, ITokenService tokenService) : IAccountService
+        IOptions<AppOptions> appOptions, ILogger<AccountService> logger, ITokenService tokenService, RefreshTokenService refreshTokens) : IAccountService
     {
         private const string DefaultOrganizationName = "My workspace";
 
@@ -54,7 +54,36 @@ namespace Radar.Infrastructure.Identity
                 return LoginResult.Failure(LoginStatus.EmailNotConfirmed);
             }
 
-            return LoginResult.Success(tokenService.CreateAccessToken(user.Id, user.Email!));
+            var refreshToken = await refreshTokens.IssueAsync(user.Id, cancellationToken);
+            return LoginResult.Success(tokenService.CreateAccessToken(user.Id, user.Email!), refreshToken);
+        }
+
+        public async Task<RefreshResult> RefreshAsync(string refreshToken, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(refreshToken))
+            {
+                return RefreshResult.Failure(RefreshStatus.Invalid);
+            }
+
+            var rotation = await refreshTokens.RotateAsync(refreshToken, cancellationToken);
+            if (rotation.Status == RotationStatus.ReuseDetected)
+            {
+                return RefreshResult.Failure(RefreshStatus.ReuseDetected);
+            }
+
+            if (rotation.Status != RotationStatus.Rotated)
+            {
+                return RefreshResult.Failure(RefreshStatus.Invalid);
+            }
+
+            // The user may have been deleted or locked since they logged in.
+            var user = await userManager.FindByIdAsync(rotation.UserId.ToString());
+            if (user is null || await userManager.IsLockedOutAsync(user))
+            {
+                return RefreshResult.Failure(RefreshStatus.Invalid);
+            }
+
+            return RefreshResult.Success(tokenService.CreateAccessToken(user.Id, user.Email!), rotation.NewToken!);
         }
 
         public async Task<UserProfile?> GetProfileAsync(Guid userId, CancellationToken cancellationToken = default)

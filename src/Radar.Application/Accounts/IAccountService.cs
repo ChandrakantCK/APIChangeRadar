@@ -23,6 +23,13 @@
         /// </summary>
         Task<LoginResult> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default);
 
+
+        /// <summary>
+        /// Exchanges a refresh token for a new access token AND a new refresh token (rotation).
+        /// Presenting an already-used refresh token revokes the whole session.
+        /// </summary>
+        Task<RefreshResult> RefreshAsync(string refreshToken, CancellationToken cancellationToken = default);
+
         /// <summary>
         /// The signed-in user's profile and organizations, or null if the user no longer exists.
         /// </summary>
