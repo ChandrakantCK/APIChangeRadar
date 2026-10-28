@@ -25,6 +25,11 @@
 
 
         /// <summary>
+        /// Signs out: revokes the whole session (token family) the refresh token belongs to. Unknown tokens are ignored.
+        /// </summary>
+        Task LogoutAsync(string? refreshToken, CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Exchanges a refresh token for a new access token AND a new refresh token (rotation).
         /// Presenting an already-used refresh token revokes the whole session.
         /// </summary>

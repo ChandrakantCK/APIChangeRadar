@@ -87,6 +87,21 @@ namespace Radar.Infrastructure.Identity
             return new RotationResult(RotationStatus.Rotated, current.UserId, new IssuedRefreshToken(raw, replacement.ExpiresAt));
         }
 
+        /// <summary>Ends the session (family) that this refresh token belongs to, e.g. on logout.</summary>
+        public async Task RevokeSessionAsync(string rawToken, string reason, CancellationToken cancellationToken)
+        {
+            var hash = Hash(rawToken);
+            var familyId = await db.Set<RefreshToken>()
+                .Where(t => t.TokenHash == hash)
+                .Select(t => (Guid?)t.FamilyId)
+                .SingleOrDefaultAsync(cancellationToken);
+
+            if (familyId is not null)
+            {
+                await RevokeFamilyAsync(familyId.Value, reason, cancellationToken);
+            }
+        }
+
         private Task<int> RevokeFamilyAsync(Guid familyId, string reason, CancellationToken cancellationToken)
         {
             var now = timeProvider.GetUtcNow();

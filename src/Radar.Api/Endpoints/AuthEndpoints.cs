@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http.HttpResults;
 using Radar.Application.Accounts;
 using Radar.Api.Authentication;
+using Radar.Api.RateLimiting;
 
 namespace Radar.Api.Endpoints
 {
@@ -8,7 +9,10 @@ namespace Radar.Api.Endpoints
     {
         public static IEndpointRouteBuilder MapAuthEndpoints(this IEndpointRouteBuilder app)
         {
-            var group = app.MapGroup("/auth").WithTags("Auth");
+            // Every /auth endpoint shares the per-IP rate limit (brute force, sign-up spam, email bombing).
+            var group = app.MapGroup("/auth")
+                .WithTags("Auth")
+                .RequireRateLimiting(RateLimitingExtensions.AuthPolicy);
 
             group.MapPost("/signup", SignUp).WithName("SignUp");
 
@@ -20,7 +24,18 @@ namespace Radar.Api.Endpoints
 
             group.MapPost("/refresh", Refresh).WithName("Refresh");
 
+            group.MapPost("/logout", Logout).WithName("Logout");
+
             return app;
+        }
+
+        private static async Task<NoContent> Logout(HttpContext http, IAccountService accounts, CancellationToken cancellationToken)
+        {
+            await accounts.LogoutAsync(RefreshTokenCookie.Read(http.Request), cancellationToken);
+            RefreshTokenCookie.Delete(http.Response);
+
+            // Always 204: logging out twice, or without a session, is not an error.
+            return TypedResults.NoContent();
         }
 
         private static async Task<Results<NoContent, ValidationProblem>> VerifyEmail(VerifyEmailRequest request, IAccountService accounts, CancellationToken cancellationToken)
