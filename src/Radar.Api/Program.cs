@@ -1,6 +1,6 @@
 using Radar.Infrastructure;
 using Radar.Api.Endpoints;
-using Microsoft.AspNetCore.HttpOverrides;
+using Radar.Api.Networking;
 using Radar.Api.Authentication;
 using Radar.Api.RateLimiting;
 
@@ -12,15 +12,8 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddJwtAuthentication();
 builder.Services.AddApiRateLimiting(builder.Configuration);
 
-// Render's proxy terminates HTTPS and forwards the request. These headers carry the real client IP and
-// the original scheme. Render's proxy addresses aren't fixed, so we trust whatever proxy is directly in
-// front of us - but only ONE hop (ForwardLimit = 1, the default), so values a client adds itself are ignored.
-builder.Services.Configure<ForwardedHeadersOptions>(options =>
-{
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    options.KnownIPNetworks.Clear();
-    options.KnownProxies.Clear();
-});
+// Behind Cloudflare + Render: recover the real client IP and https scheme from the proxies' headers.
+builder.Services.AddTrustedForwardedHeaders();
 
 var app = builder.Build();
 
@@ -45,5 +38,6 @@ app.UseAuthorization();
 app.MapHealthChecks("/health");
 app.MapAuthEndpoints();
 app.MapMeEndpoints();
+app.MapDiagnosticsEndpoints();
 
 app.Run();
