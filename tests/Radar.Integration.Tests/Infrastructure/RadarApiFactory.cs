@@ -7,6 +7,7 @@ using Testcontainers.PostgreSql;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Radar.Application.Abstractions;
+using System.Security.Cryptography;
 
 namespace Radar.Integration.Tests.Infrastructure
 {
@@ -19,6 +20,9 @@ namespace Radar.Integration.Tests.Infrastructure
         private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17-alpine")
             .Build();
         public FakeEmailSender Emails { get; } = new();
+
+        // A fresh random signing key for every test run (32 bytes, base64).
+        public string JwtSigningKey { get; } = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
 
         public async Task InitializeAsync()
         {
@@ -34,6 +38,7 @@ namespace Radar.Integration.Tests.Infrastructure
         {
             builder.UseEnvironment("Testing");
             builder.UseSetting("ConnectionStrings:Database", _postgres.GetConnectionString());
+            builder.UseSetting("Jwt:SigningKey", JwtSigningKey);
             // Swap the real email sender for one that records messages in memory.
             builder.ConfigureTestServices(services =>
             {

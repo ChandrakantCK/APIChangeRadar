@@ -15,6 +15,8 @@ namespace Radar.Api.Endpoints
 
             group.MapPost("/resend-verification", ResendVerification).WithName("ResendVerification");
 
+            group.MapPost("/login", Login).WithName("Login");
+
             return app;
         }
 
@@ -58,7 +60,35 @@ namespace Radar.Api.Endpoints
                 $"/organizations/{result.OrganizationId}",
                 new SignUpResponse(result.UserId, result.OrganizationId));
         }
+
+        private static async Task<Results<Ok<LoginResponse>, ProblemHttpResult>> Login(LoginRequest request, IAccountService accounts, CancellationToken cancellationToken)
+        {
+            var result = await accounts.LoginAsync(request, cancellationToken);
+
+            return result.Status switch
+            {
+                LoginStatus.Succeeded => TypedResults.Ok(
+                    new LoginResponse(result.AccessToken!.Token, "Bearer", result.AccessToken.ExpiresAt)),
+
+                LoginStatus.EmailNotConfirmed => TypedResults.Problem(
+                    title: "Email not confirmed",
+                    detail: "Confirm your email address before signing in.",
+                    statusCode: StatusCodes.Status403Forbidden),
+
+                LoginStatus.LockedOut => TypedResults.Problem(
+                    title: "Too many failed attempts",
+                    detail: "Try again in 15 minutes.",
+                    statusCode: StatusCodes.Status429TooManyRequests),
+
+                _ => TypedResults.Problem(
+                    title: "Invalid credentials",
+                    detail: "Invalid email or password.",
+                    statusCode: StatusCodes.Status401Unauthorized),
+            };
+        }
     }
 
     public sealed record SignUpResponse(Guid UserId, Guid OrganizationId);
+
+    public sealed record LoginResponse(string AccessToken, string TokenType, DateTimeOffset ExpiresAt);
 }
