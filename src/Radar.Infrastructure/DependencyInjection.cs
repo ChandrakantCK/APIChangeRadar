@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Radar.Application.Abstractions;
 using Radar.Infrastructure.Email;
+using Radar.Infrastructure.Authentication;
 
 namespace Radar.Infrastructure
 {
@@ -32,6 +33,11 @@ namespace Radar.Infrastructure
                 options.Password.RequireLowercase = false;
                 options.Password.RequireUppercase = false;
                 options.Password.RequireNonAlphanumeric = false;
+
+                // Brute-force protection: 5 wrong passwords in a row lock the account for 15 minutes.
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+                options.Lockout.AllowedForNewUsers = true;
             }).AddEntityFrameworkStores<AppDbContext>()
               .AddDefaultTokenProviders();
 
@@ -55,6 +61,17 @@ namespace Radar.Infrastructure
             {
                 services.AddSingleton<IEmailSender, SmtpEmailSender>();
             }
+
+            // JWT settings are checked when the app STARTS (not when it is built), so a missing
+            // key stops a real deployment but doesn't break tools like 'dotnet ef'.
+            services.AddOptions<JwtOptions>()
+                .Bind(configuration.GetSection(JwtOptions.SectionName))
+                .Validate(o => o.HasValidSigningKey(), "Jwt:SigningKey must be a base64 string of at least 32 bytes.")
+                .Validate(o => !string.IsNullOrWhiteSpace(o.Issuer) && !string.IsNullOrWhiteSpace(o.Audience), "Jwt:Issuer and Jwt:Audience are required.")
+                .ValidateOnStart();
+
+            services.AddSingleton(TimeProvider.System);
+            services.AddSingleton<ITokenService, JwtTokenService>();
 
             services.AddScoped<IAccountService, AccountService>();
 
