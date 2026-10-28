@@ -39,6 +39,10 @@ namespace Radar.Integration.Tests.Infrastructure
             builder.UseEnvironment("Testing");
             builder.UseSetting("ConnectionStrings:Database", _postgres.GetConnectionString());
             builder.UseSetting("Jwt:SigningKey", JwtSigningKey);
+
+            // All test requests come from one "client", so lift the auth rate limit for normal tests.
+            // RateLimitTests lowers it again for itself.
+            builder.UseSetting("RateLimiting:AuthPermitLimit", "100000");
             // Swap the real email sender for one that records messages in memory.
             builder.ConfigureTestServices(services =>
             {

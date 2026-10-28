@@ -58,6 +58,16 @@ namespace Radar.Infrastructure.Identity
             return LoginResult.Success(tokenService.CreateAccessToken(user.Id, user.Email!), refreshToken);
         }
 
+        public async Task LogoutAsync(string? refreshToken, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(refreshToken))
+            {
+                return;
+            }
+
+            await refreshTokens.RevokeSessionAsync(refreshToken, "logout", cancellationToken);
+        }
+
         public async Task<RefreshResult> RefreshAsync(string refreshToken, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(refreshToken))
