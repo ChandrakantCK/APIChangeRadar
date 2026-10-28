@@ -11,18 +11,8 @@
 
         public Organization(string name)
         {
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                throw new ArgumentException("Organization name is required.", nameof(name));
-            }
-
-            if (name.Trim().Length > NameMaxLength)
-            {
-                throw new ArgumentException($"Organization name must be at most {NameMaxLength} characters.", nameof(name));
-            }
-
             Id = Guid.CreateVersion7();
-            Name = name.Trim();
+            Name = ValidateName(name);
             Plan = OrganizationPlan.Free;
             CreatedAt = DateTimeOffset.UtcNow;
         }
@@ -36,5 +26,25 @@
         public DateTimeOffset? TrialEndsAt { get; private set; }
 
         public DateTimeOffset CreatedAt { get; private set; }
+
+        public void Rename(string name)
+        {
+            Name = ValidateName(name);
+        }
+
+        private static string ValidateName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentException("Organization name is required.", nameof(name));
+            }
+
+            if (name.Trim().Length > NameMaxLength)
+            {
+                throw new ArgumentException($"Organization name must be at most {NameMaxLength} characters.", nameof(name));
+            }
+
+            return name.Trim();
+        }
     }
 }

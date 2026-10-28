@@ -9,6 +9,9 @@ using Microsoft.AspNetCore.Identity;
 using Radar.Application.Abstractions;
 using Radar.Infrastructure.Email;
 using Radar.Infrastructure.Authentication;
+using Radar.Application.Organizations;
+using Radar.Infrastructure.Organizations;
+using Radar.Infrastructure.Tenancy;
 
 namespace Radar.Infrastructure
 {
@@ -74,6 +77,11 @@ namespace Radar.Infrastructure
             services.AddSingleton<ITokenService, JwtTokenService>();
 
             services.AddScoped<RefreshTokenService>();
+            // One "current organization" per request: set by the API's OrganizationScopeFilter,
+            // read by AppDbContext's tenant query filter.
+            services.AddScoped<CurrentOrganizationContext>();
+            services.AddScoped<ICurrentOrganization>(sp => sp.GetRequiredService<CurrentOrganizationContext>());
+            services.AddScoped<IOrganizationService, OrganizationService>();
             services.AddScoped<IAccountService, AccountService>();
 
             services.AddHealthChecks()
