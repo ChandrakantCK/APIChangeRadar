@@ -242,7 +242,20 @@ namespace Radar.Infrastructure.Identity
             }
 
             var result = await userManager.ConfirmEmailAsync(user, token);
-            return result.Succeeded;
+            if (result.Succeeded)
+            {
+                return true;
+            }
+
+            // Two confirmations at once (double click, two tabs): one wins, the other loses Identity's
+            // optimistic-concurrency check. Either way the address is confirmed now, so report success.
+            if (result.Errors.Any(e => e.Code == nameof(IdentityErrorDescriber.ConcurrencyFailure)))
+            {
+                var current = await userManager.FindByIdAsync(request.UserId.ToString());
+                return current?.EmailConfirmed == true;
+            }
+
+            return false;
         }
 
         public async Task ResendVerificationEmailAsync(ResendVerificationEmailRequest request, CancellationToken cancellationToken = default)
