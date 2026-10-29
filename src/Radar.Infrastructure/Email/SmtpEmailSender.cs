@@ -20,7 +20,9 @@ namespace Radar.Infrastructure.Email
             mime.Subject = message.Subject;
             mime.Body = new BodyBuilder { TextBody = message.TextBody, HtmlBody = message.HtmlBody }.ToMessageBody();
 
-            using var client = new SmtpClient();
+            // Give up after 15 seconds instead of MailKit's default 2 minutes, so a blocked or
+            // slow mail server can't keep a web request waiting.
+            using var client = new SmtpClient { Timeout = 15_000 };
 
             // Auto = use TLS if the server offers it (real providers), plain if not (Mailpit).
             await client.ConnectAsync(host, settings.Smtp.Port, SecureSocketOptions.Auto, cancellationToken);
