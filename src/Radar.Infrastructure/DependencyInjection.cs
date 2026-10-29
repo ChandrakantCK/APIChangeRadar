@@ -56,13 +56,22 @@ namespace Radar.Infrastructure
             services.Configure<AppOptions>(configuration.GetSection(AppOptions.SectionName));
             services.Configure<EmailOptions>(configuration.GetSection(EmailOptions.SectionName));
 
-            if (string.IsNullOrWhiteSpace(configuration[$"{EmailOptions.SectionName}:Smtp:Host"]))
+            // Which email sender: Resend's HTTP API (production), SMTP (Mailpit locally), or just log (nothing configured).
+            if (!string.IsNullOrWhiteSpace(configuration[$"{EmailOptions.SectionName}:Resend:ApiKey"]))
             {
-                services.AddSingleton<IEmailSender, LoggingEmailSender>();
+                services.AddHttpClient<IEmailSender, ResendEmailSender>(client =>
+                {
+                    client.BaseAddress = new Uri("https://api.resend.com/");
+                    client.Timeout = TimeSpan.FromSeconds(15);
+                });
+            }
+            else if (!string.IsNullOrWhiteSpace(configuration[$"{EmailOptions.SectionName}:Smtp:Host"]))
+            {
+                services.AddSingleton<IEmailSender, SmtpEmailSender>();
             }
             else
             {
-                services.AddSingleton<IEmailSender, SmtpEmailSender>();
+                services.AddSingleton<IEmailSender, LoggingEmailSender>();
             }
 
             // JWT settings are checked when the app STARTS (not when it is built), so a missing

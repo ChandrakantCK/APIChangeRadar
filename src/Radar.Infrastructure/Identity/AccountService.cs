@@ -274,7 +274,16 @@ namespace Radar.Infrastructure.Identity
                 return;
             }
 
-            await SendVerificationEmailAsync(user, cancellationToken);
+            // A mail problem must not change the answer (that would leak that this email has an account)
+            // or crash the request; log it instead.
+            try
+            {
+                await SendVerificationEmailAsync(user, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Could not resend the verification email for user {UserId}.", user.Id);
+            }
         }
 
         /// <summary>
