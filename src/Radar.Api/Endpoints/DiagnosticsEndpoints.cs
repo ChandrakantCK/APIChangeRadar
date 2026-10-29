@@ -9,6 +9,8 @@
             app.MapGet("/diagnostics/client", (HttpContext http) => TypedResults.Ok(new ClientInfo(
                     ClientIp: http.Connection.RemoteIpAddress?.ToString(),
                     Scheme: http.Request.Scheme,
+                    Host: http.Request.Host.Value,
+                    PathBase: http.Request.PathBase.Value ?? string.Empty,
                     OriginalForwardedFor: http.Request.Headers["X-Original-For"].ToString(),
                     UnprocessedForwardedFor: http.Request.Headers["X-Forwarded-For"].ToString())))
                 .WithTags("Diagnostics")
@@ -18,5 +20,5 @@
         }
     }
 
-    public sealed record ClientInfo(string? ClientIp, string Scheme, string OriginalForwardedFor, string UnprocessedForwardedFor);
+    public sealed record ClientInfo(string? ClientIp, string Scheme, string? Host, string PathBase, string OriginalForwardedFor, string UnprocessedForwardedFor);
 }

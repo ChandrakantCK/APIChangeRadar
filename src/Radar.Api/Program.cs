@@ -16,10 +16,14 @@ builder.Services.AddApiRateLimiting(builder.Configuration);
 // Behind Cloudflare + Render: recover the real client IP and https scheme from the proxies' headers.
 builder.Services.AddTrustedForwardedHeaders();
 
+// Calls that come through the web app's /api proxy (identified by a shared secret).
+builder.Services.AddTrustedWebProxy(builder.Configuration);
+
 var app = builder.Build();
 
 // First: everything after this sees the real client IP and scheme.
 app.UseForwardedHeaders();
+app.UseTrustedWebProxy();
 
 if (app.Environment.IsDevelopment())
 {

@@ -38,14 +38,15 @@ namespace Radar.Api.Endpoints
         }
 
         // Step 1: send the browser to GitHub. The handler adds client_id, redirect_uri and a random "state".
-        private static async Task<IResult> GitHubStart(IAuthenticationSchemeProvider schemes)
+        private static async Task<IResult> GitHubStart(HttpContext http, IAuthenticationSchemeProvider schemes)
         {
             if (await schemes.GetSchemeAsync(GitHubLogin.Scheme) is null)
             {
                 return TypedResults.NotFound(); // GitHub sign-in isn't configured here
             }
 
-            var properties = new AuthenticationProperties { RedirectUri = "/auth/github/complete" };
+            // PathBase keeps the browser on the proxy path ("/api/auth/...") when we're behind the web app.
+            var properties = new AuthenticationProperties { RedirectUri = $"{http.Request.PathBase}/auth/github/complete" };
             return TypedResults.Challenge(properties, [GitHubLogin.Scheme]);
         }
 
