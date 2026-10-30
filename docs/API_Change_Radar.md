@@ -325,7 +325,7 @@ Defences, all inside `SafeHttpClient`:
 
 - Encrypt secrets at rest (webhook secrets, Slack URLs, the GitHub App private key) using ASP.NET Data Protection or envelope encryption. Never log them.
 - Keep an **audit log** for security-relevant actions: login, secret rotation, channel changes, member changes and plan changes.
-- Make the OWASP Top 10 and ASVS level 1 a checklist in the repo, and tick it off per feature.
+- Make the OWASP Top 10 and ASVS level 1 a checklist in the repo, and tick it off per feature. → [security/asvs-checklist.md](security/asvs-checklist.md)
 
 ---
 
@@ -397,7 +397,7 @@ APIChangeRadar/
 └─ .github/workflows/
 ```
 
-Write a short **ADR** (architecture decision record) for each big decision: Postgres queue, the outbox, refresh-token design, the SSRF approach and the billing provider. ADRs are good interview material later.
+Write a short **ADR** (architecture decision record) for each big decision: Postgres queue, the outbox, refresh-token design, the SSRF approach and the billing provider. ADRs are good interview material later. → [adr/](adr/README.md)
 
 ---
 
