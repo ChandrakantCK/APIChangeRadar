@@ -395,6 +395,42 @@ namespace Radar.Infrastructure.Persistence.Migrations
                     b.ToTable("organizations", (string)null);
                 });
 
+            modelBuilder.Entity("Radar.Domain.Watches.Watch", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("SpecSourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("spec_source_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_watches");
+
+                    b.HasIndex("SpecSourceId")
+                        .HasDatabaseName("ix_watches_spec_source_id");
+
+                    b.HasIndex("OrganizationId", "SpecSourceId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_watches_organization_id_spec_source_id");
+
+                    b.ToTable("watches", (string)null);
+                });
+
             modelBuilder.Entity("Radar.Infrastructure.Identity.ApplicationUser", b =>
                 {
                     b.Property<Guid>("Id")
@@ -603,6 +639,23 @@ namespace Radar.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_memberships_users_user_id");
+                });
+
+            modelBuilder.Entity("Radar.Domain.Watches.Watch", b =>
+                {
+                    b.HasOne("Radar.Domain.Organizations.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_watches_organizations_organization_id");
+
+                    b.HasOne("Radar.Domain.Catalog.SpecSource", null)
+                        .WithMany()
+                        .HasForeignKey("SpecSourceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_watches_spec_sources_spec_source_id");
                 });
 
             modelBuilder.Entity("Radar.Infrastructure.Identity.RefreshToken", b =>

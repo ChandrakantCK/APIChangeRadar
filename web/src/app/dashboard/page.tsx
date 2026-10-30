@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Alert, Button, Field } from "@/components/ui";
@@ -74,9 +75,14 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <p className="text-sm text-gray-500">Signed in as {profile.email}</p>
         </div>
-        <button onClick={onSignOut} className="rounded-md border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50">
-          Sign out
-        </button>
+        <div className="flex items-center gap-4">
+          <Link href="/watches" className="text-sm text-blue-600 hover:underline">
+            Watches
+          </Link>
+          <button onClick={onSignOut} className="rounded-md border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50">
+            Sign out
+          </button>
+        </div>
       </header>
 
       {organization && (
