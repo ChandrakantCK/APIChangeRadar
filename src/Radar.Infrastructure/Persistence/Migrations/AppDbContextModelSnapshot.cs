@@ -170,6 +170,169 @@ namespace Radar.Infrastructure.Persistence.Migrations
                     b.ToTable("audit_entries", (string)null);
                 });
 
+            modelBuilder.Entity("Radar.Domain.Catalog.ApiProvider", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("slug");
+
+                    b.Property<string>("WebsiteUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("website_url");
+
+                    b.HasKey("Id")
+                        .HasName("pk_api_providers");
+
+                    b.HasIndex("Slug")
+                        .IsUnique()
+                        .HasDatabaseName("ix_api_providers_slug");
+
+                    b.ToTable("api_providers", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("528c303d-c68d-4834-80a6-cdc860f74b43"),
+                            Name = "Stripe",
+                            Slug = "stripe",
+                            WebsiteUrl = "https://stripe.com"
+                        },
+                        new
+                        {
+                            Id = new Guid("d5b42dc0-59b2-4ec4-8dff-bbe4446a7c54"),
+                            Name = "GitHub",
+                            Slug = "github",
+                            WebsiteUrl = "https://github.com"
+                        },
+                        new
+                        {
+                            Id = new Guid("8cd22e47-268b-4e0d-891b-f9cfd327af2d"),
+                            Name = "Twilio",
+                            Slug = "twilio",
+                            WebsiteUrl = "https://www.twilio.com"
+                        });
+                });
+
+            modelBuilder.Entity("Radar.Domain.Catalog.SpecSource", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Branch")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("branch");
+
+                    b.Property<string>("FilePath")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("file_path");
+
+                    b.Property<string>("Format")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("format");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid>("ProviderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("provider_id");
+
+                    b.Property<string>("Repository")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("repository");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("slug");
+
+                    b.Property<string>("SpecUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("spec_url");
+
+                    b.HasKey("Id")
+                        .HasName("pk_spec_sources");
+
+                    b.HasIndex("ProviderId", "Slug")
+                        .IsUnique()
+                        .HasDatabaseName("ix_spec_sources_provider_id_slug");
+
+                    b.ToTable("spec_sources", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("42c4b303-6db2-48d1-bf97-304feab0ad8d"),
+                            Branch = "master",
+                            FilePath = "openapi/spec3.json",
+                            Format = "OpenApi",
+                            IsActive = true,
+                            Name = "Stripe API",
+                            ProviderId = new Guid("528c303d-c68d-4834-80a6-cdc860f74b43"),
+                            Repository = "stripe/openapi",
+                            Slug = "api",
+                            SpecUrl = "https://raw.githubusercontent.com/stripe/openapi/master/openapi/spec3.json"
+                        },
+                        new
+                        {
+                            Id = new Guid("5cba65a3-c7c2-494d-ae65-93ccfa284438"),
+                            Branch = "main",
+                            FilePath = "descriptions/api.github.com/api.github.com.json",
+                            Format = "OpenApi",
+                            IsActive = true,
+                            Name = "GitHub REST API",
+                            ProviderId = new Guid("d5b42dc0-59b2-4ec4-8dff-bbe4446a7c54"),
+                            Repository = "github/rest-api-description",
+                            Slug = "rest-api",
+                            SpecUrl = "https://raw.githubusercontent.com/github/rest-api-description/main/descriptions/api.github.com/api.github.com.json"
+                        },
+                        new
+                        {
+                            Id = new Guid("cdec6a40-8dbb-4bdc-98a5-a755c9490064"),
+                            Branch = "main",
+                            FilePath = "spec/json/twilio_api_v2010.json",
+                            Format = "OpenApi",
+                            IsActive = true,
+                            Name = "Twilio API (2010-04-01)",
+                            ProviderId = new Guid("8cd22e47-268b-4e0d-891b-f9cfd327af2d"),
+                            Repository = "twilio/twilio-oai",
+                            Slug = "api-v2010",
+                            SpecUrl = "https://raw.githubusercontent.com/twilio/twilio-oai/main/spec/json/twilio_api_v2010.json"
+                        });
+                });
+
             modelBuilder.Entity("Radar.Domain.Organizations.Membership", b =>
                 {
                     b.Property<Guid>("OrganizationId")
@@ -415,6 +578,16 @@ namespace Radar.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_audit_entries_organizations_organization_id");
                 });
 
+            modelBuilder.Entity("Radar.Domain.Catalog.SpecSource", b =>
+                {
+                    b.HasOne("Radar.Domain.Catalog.ApiProvider", null)
+                        .WithMany("Sources")
+                        .HasForeignKey("ProviderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_spec_sources_api_providers_provider_id");
+                });
+
             modelBuilder.Entity("Radar.Domain.Organizations.Membership", b =>
                 {
                     b.HasOne("Radar.Domain.Organizations.Organization", null)
@@ -440,6 +613,11 @@ namespace Radar.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_refresh_tokens_users_user_id");
+                });
+
+            modelBuilder.Entity("Radar.Domain.Catalog.ApiProvider", b =>
+                {
+                    b.Navigation("Sources");
                 });
 #pragma warning restore 612, 618
         }

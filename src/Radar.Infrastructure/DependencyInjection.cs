@@ -12,6 +12,8 @@ using Radar.Infrastructure.Authentication;
 using Radar.Application.Organizations;
 using Radar.Infrastructure.Organizations;
 using Radar.Infrastructure.Tenancy;
+using Radar.Application.Catalog;
+using Radar.Infrastructure.Catalog;
 
 namespace Radar.Infrastructure
 {
@@ -91,6 +93,7 @@ namespace Radar.Infrastructure
             services.AddScoped<CurrentOrganizationContext>();
             services.AddScoped<ICurrentOrganization>(sp => sp.GetRequiredService<CurrentOrganizationContext>());
             services.AddScoped<IOrganizationService, OrganizationService>();
+            services.AddScoped<ICatalogService, CatalogService>();
             services.AddScoped<IAccountService, AccountService>();
 
             services.AddHealthChecks()
