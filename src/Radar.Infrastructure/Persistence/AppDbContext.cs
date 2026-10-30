@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Radar.Application.Abstractions;
 using Radar.Domain.Auditing;
 using Radar.Domain.Catalog;
+using Radar.Domain.Watches;
 using Radar.Domain.Common;
 using Radar.Domain.Organizations;
 using Radar.Infrastructure.Identity;
@@ -22,6 +23,7 @@ namespace Radar.Infrastructure.Persistence
         public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
         public DbSet<ApiProvider> ApiProviders => Set<ApiProvider>();
         public DbSet<SpecSource> SpecSources => Set<SpecSource>();
+        public DbSet<Watch> Watches => Set<Watch>();
 
         // Read by the tenant query filter each time a query runs (EF Core re-evaluates context members).
         private Guid? CurrentOrganizationId => currentOrganization.OrganizationId;

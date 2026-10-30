@@ -45,6 +45,7 @@ app.MapAuthEndpoints();
 app.MapMeEndpoints();
 app.MapOrganizationEndpoints();
 app.MapCatalogEndpoints();
+app.MapWatchEndpoints();
 app.MapDiagnosticsEndpoints();
 
 app.Run();
