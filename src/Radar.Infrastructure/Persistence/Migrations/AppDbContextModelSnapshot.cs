@@ -333,6 +333,68 @@ namespace Radar.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Radar.Domain.Crawling.CrawlRun", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ContentHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character(64)")
+                        .HasColumnName("content_hash")
+                        .IsFixedLength();
+
+                    b.Property<long?>("ContentLength")
+                        .HasColumnType("bigint")
+                        .HasColumnName("content_length");
+
+                    b.Property<int>("DurationMs")
+                        .HasColumnType("integer")
+                        .HasColumnName("duration_ms");
+
+                    b.Property<string>("ETag")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("etag");
+
+                    b.Property<string>("Error")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("error");
+
+                    b.Property<int?>("HttpStatus")
+                        .HasColumnType("integer")
+                        .HasColumnName("http_status");
+
+                    b.Property<DateTimeOffset?>("LastModified")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_modified");
+
+                    b.Property<string>("Outcome")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("outcome");
+
+                    b.Property<Guid>("SpecSourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("spec_source_id");
+
+                    b.Property<DateTimeOffset>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_crawl_runs");
+
+                    b.HasIndex("SpecSourceId", "StartedAt")
+                        .HasDatabaseName("ix_crawl_runs_spec_source_id_started_at");
+
+                    b.ToTable("crawl_runs", (string)null);
+                });
+
             modelBuilder.Entity("Radar.Domain.Organizations.Membership", b =>
                 {
                     b.Property<Guid>("OrganizationId")
@@ -622,6 +684,16 @@ namespace Radar.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_spec_sources_api_providers_provider_id");
+                });
+
+            modelBuilder.Entity("Radar.Domain.Crawling.CrawlRun", b =>
+                {
+                    b.HasOne("Radar.Domain.Catalog.SpecSource", null)
+                        .WithMany()
+                        .HasForeignKey("SpecSourceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_crawl_runs_spec_sources_spec_source_id");
                 });
 
             modelBuilder.Entity("Radar.Domain.Organizations.Membership", b =>

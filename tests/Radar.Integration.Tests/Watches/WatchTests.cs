@@ -1,15 +1,10 @@
 using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Radar.Api.Endpoints;
-using Radar.Application.Accounts;
 using Radar.Application.Organizations;
 using Radar.Application.Watches;
 using Radar.Domain.Catalog;
-using Radar.Infrastructure.Identity;
 using Radar.Infrastructure.Persistence;
 using Radar.Infrastructure.Persistence.Seed;
 using Radar.Integration.Tests.Infrastructure;
@@ -19,28 +14,9 @@ namespace Radar.Integration.Tests.Watches
     [Collection(ApiCollection.Name)]
     public class WatchTests(RadarApiFactory factory)
     {
-        private const string ValidPassword = "correct horse battery staple";
         private const string WatchesPath = "/organizations/current/watches";
 
-        // Signs up a verified user with their own organization and returns a client that carries their token.
-        private async Task<HttpClient> CreateSignedInClientAsync()
-        {
-            var client = factory.CreateClient();
-            var email = $"watcher-{Guid.NewGuid():N}@example.com";
-            (await client.PostAsJsonAsync("/auth/signup", new { email, password = ValidPassword, organizationName = "Watchers" })).EnsureSuccessStatusCode();
-
-            using (var scope = factory.Services.CreateScope())
-            {
-                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-                var user = await userManager.FindByEmailAsync(email);
-                await userManager.ConfirmEmailAsync(user!, await userManager.GenerateEmailConfirmationTokenAsync(user!));
-            }
-
-            var login = await client.PostAsJsonAsync("/auth/login", new { email, password = ValidPassword });
-            var token = (await login.Content.ReadFromJsonAsync<LoginResponse>())!.AccessToken;
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            return client;
-        }
+        private Task<HttpClient> CreateSignedInClientAsync() => TestAccounts.CreateSignedInClientAsync(factory, "Watchers");
 
         // The seeded catalog has only 3 sources, the same as the free limit, so limit tests add their own.
         private async Task<List<Guid>> CreateSourcesAsync(int count)

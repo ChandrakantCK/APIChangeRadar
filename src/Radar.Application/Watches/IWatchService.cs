@@ -6,7 +6,9 @@ namespace Radar.Application.Watches
         string ProviderName,
         string SourceName,
         string SpecUrl,
-        DateTimeOffset CreatedAt);
+        DateTimeOffset CreatedAt,
+        DateTimeOffset? LastCheckedAt,
+        string? LastCheckOutcome);
 
     /// <summary>The current organization's watches plus how many its plan allows.</summary>
     public sealed record WatchList(int Used, int Limit, IReadOnlyList<WatchView> Items);

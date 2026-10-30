@@ -20,6 +20,20 @@ async function loadWatches(): Promise<WatchesData> {
   return { watches: watches.data ?? null, catalog: catalog.data ?? [] };
 }
 
+function describeOutcome(outcome: string | null): string {
+  switch (outcome) {
+    case "Changed":
+      return "new version downloaded";
+    case "Unchanged":
+    case "NotModified":
+      return "no change";
+    case "Failed":
+      return "download failed, will retry";
+    default:
+      return "unknown";
+  }
+}
+
 export default function WatchesPage() {
   const router = useRouter();
   const { status } = useAuth();
@@ -101,6 +115,11 @@ export default function WatchesPage() {
               <span>
                 <span className="font-medium">{w.providerName}</span>
                 <span className="text-gray-500"> · {w.sourceName}</span>
+                <span className="block text-xs text-gray-500">
+                  {w.lastCheckedAt
+                    ? `Last checked ${new Date(w.lastCheckedAt).toLocaleString()} · ${describeOutcome(w.lastCheckOutcome)}`
+                    : "Not checked yet - the crawler picks it up within 15 minutes"}
+                </span>
               </span>
               <button
                 onClick={() => unwatch(w.id, w.sourceName)}

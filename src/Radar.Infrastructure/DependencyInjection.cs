@@ -16,6 +16,7 @@ using Radar.Application.Catalog;
 using Radar.Infrastructure.Catalog;
 using Radar.Application.Watches;
 using Radar.Infrastructure.Watches;
+using Radar.Infrastructure.Crawling;
 
 namespace Radar.Infrastructure
 {
@@ -98,6 +99,8 @@ namespace Radar.Infrastructure
             services.AddScoped<ICatalogService, CatalogService>();
             services.AddScoped<IWatchService, WatchService>();
             services.AddScoped<IAccountService, AccountService>();
+
+            services.AddCrawling(configuration);
 
             services.AddHealthChecks()
                 .AddDbContextCheck<AppDbContext>("database");

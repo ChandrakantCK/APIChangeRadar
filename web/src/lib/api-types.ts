@@ -381,6 +381,9 @@ export interface components {
             specUrl: string;
             /** Format: date-time */
             createdAt: string;
+            /** Format: date-time */
+            lastCheckedAt: null | string;
+            lastCheckOutcome: null | string;
         };
     };
     responses: never;

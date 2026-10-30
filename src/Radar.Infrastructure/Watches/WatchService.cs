@@ -114,7 +114,14 @@ namespace Radar.Infrastructure.Watches
             from w in watches
             join s in db.SpecSources on w.SpecSourceId equals s.Id
             join p in db.ApiProviders on s.ProviderId equals p.Id
-            select new WatchView(w.Id, s.Id, p.Name, s.Name, s.SpecUrl, w.CreatedAt);
+            let lastRun = db.CrawlRuns
+                .Where(r => r.SpecSourceId == s.Id)
+                .OrderByDescending(r => r.StartedAt)
+                .FirstOrDefault()
+            select new WatchView(
+                w.Id, s.Id, p.Name, s.Name, s.SpecUrl, w.CreatedAt,
+                lastRun == null ? null : lastRun.StartedAt,
+                lastRun == null ? null : lastRun.Outcome.ToString());
 
         private Guid RequireOrganization() =>
             current.OrganizationId
