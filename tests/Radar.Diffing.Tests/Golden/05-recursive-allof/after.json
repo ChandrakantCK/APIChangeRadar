@@ -1,0 +1,29 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Comments", "version": "2" },
+  "paths": {
+    "/comments/{id}": {
+      "get": {
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Comment" } } } }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Base": {
+        "type": "object",
+        "properties": { "id": { "type": "string" }, "created_at": { "type": "string" } }
+      },
+      "Comment": {
+        "allOf": [{ "$ref": "#/components/schemas/Base" }],
+        "properties": {
+          "text": { "type": "string" },
+          "replies": { "type": "array", "items": { "$ref": "#/components/schemas/Comment" } }
+        }
+      }
+    }
+  }
+}

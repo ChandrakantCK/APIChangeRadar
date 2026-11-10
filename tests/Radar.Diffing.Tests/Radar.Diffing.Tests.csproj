@@ -19,6 +19,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Golden files: before/after specs and the reviewed list of changes the differ must find. -->
+    <None Include="Golden\**\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Radar.Diffing\Radar.Diffing.csproj" />
   </ItemGroup>
 

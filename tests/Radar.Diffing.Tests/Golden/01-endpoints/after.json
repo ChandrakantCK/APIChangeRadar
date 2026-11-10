@@ -1,0 +1,19 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Pets", "version": "2" },
+  "paths": {
+    "/pets": {
+      "get": { "deprecated": true, "responses": { "200": { "description": "OK" } } }
+    },
+    "/pets/{id}": {
+      "get": {
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "OK" } }
+      },
+      "delete": {
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "204": { "description": "Deleted" } }
+      }
+    }
+  }
+}

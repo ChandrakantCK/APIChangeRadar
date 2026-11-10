@@ -1,0 +1,42 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Customers", "version": "2" },
+  "paths": {
+    "/customers/{id}": {
+      "get": {
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Customer" } } } },
+          "404": { "description": "Not found" }
+        }
+      }
+    },
+    "/customers/{id}/archive": {
+      "post": {
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Archived" },
+          "204": { "description": "Already archived" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Customer": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "status": { "type": "string", "enum": ["active", "deleted", "suspended"] },
+          "created": { "type": "integer" },
+          "currency": { "type": "string" },
+          "sources": { "type": "array", "items": { "$ref": "#/components/schemas/Source" } }
+        }
+      },
+      "Source": {
+        "type": "object",
+        "properties": { "id": { "type": "string" }, "last4": { "type": "string" } }
+      }
+    }
+  }
+}

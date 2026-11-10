@@ -1,0 +1,10 @@
+[
+  {
+    "ruleId": "response-field-added",
+    "severity": "Info",
+    "method": "GET",
+    "path": "/comments/{id}",
+    "location": "response 200 `created_at`",
+    "message": "New field `created_at` in the 200 response."
+  }
+]

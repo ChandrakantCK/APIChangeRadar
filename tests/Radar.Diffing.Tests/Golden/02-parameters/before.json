@@ -1,0 +1,18 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Orders", "version": "1" },
+  "paths": {
+    "/orders": {
+      "get": {
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["open", "closed", "pending"] } },
+          { "name": "cursor", "in": "query", "schema": { "type": "string" } },
+          { "name": "legacy", "in": "query", "schema": { "type": "boolean" } },
+          { "name": "X-Trace", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "OK" } }
+      }
+    }
+  }
+}

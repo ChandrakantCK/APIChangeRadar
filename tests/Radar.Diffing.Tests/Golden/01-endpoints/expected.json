@@ -1,0 +1,26 @@
+[
+  {
+    "ruleId": "endpoint-deprecated",
+    "severity": "Warning",
+    "method": "GET",
+    "path": "/pets",
+    "location": "",
+    "message": "Endpoint deprecated."
+  },
+  {
+    "ruleId": "endpoint-removed",
+    "severity": "Breaking",
+    "method": "POST",
+    "path": "/pets",
+    "location": "",
+    "message": "Endpoint removed."
+  },
+  {
+    "ruleId": "endpoint-added",
+    "severity": "Info",
+    "method": "DELETE",
+    "path": "/pets/{id}",
+    "location": "",
+    "message": "Endpoint added."
+  }
+]

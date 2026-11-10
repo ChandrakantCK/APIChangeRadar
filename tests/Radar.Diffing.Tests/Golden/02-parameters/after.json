@@ -1,0 +1,19 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Orders", "version": "2" },
+  "paths": {
+    "/orders": {
+      "get": {
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["open", "closed"] } },
+          { "name": "cursor", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "account", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "expand", "in": "query", "schema": { "type": "string" } },
+          { "name": "x-trace", "in": "header", "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "OK" } }
+      }
+    }
+  }
+}

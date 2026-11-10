@@ -1,0 +1,66 @@
+[
+  {
+    "ruleId": "response-field-removed",
+    "severity": "Breaking",
+    "method": "GET",
+    "path": "/customers/{id}",
+    "location": "response 200 `email`",
+    "message": "Field `email` was removed from the 200 response."
+  },
+  {
+    "ruleId": "response-field-removed",
+    "severity": "Breaking",
+    "method": "GET",
+    "path": "/customers/{id}",
+    "location": "response 200 `sources[].brand`",
+    "message": "Field `sources[].brand` was removed from the 200 response."
+  },
+  {
+    "ruleId": "response-field-type-changed",
+    "severity": "Breaking",
+    "method": "GET",
+    "path": "/customers/{id}",
+    "location": "response 200 `id`",
+    "message": "Type of response 200 `id` changed from string to integer."
+  },
+  {
+    "ruleId": "response-field-enum-value-added",
+    "severity": "Warning",
+    "method": "GET",
+    "path": "/customers/{id}",
+    "location": "response 200 `status`",
+    "message": "Field `status` in the 200 response can now also be \"suspended\"."
+  },
+  {
+    "ruleId": "response-field-added",
+    "severity": "Info",
+    "method": "GET",
+    "path": "/customers/{id}",
+    "location": "response 200 `currency`",
+    "message": "New field `currency` in the 200 response."
+  },
+  {
+    "ruleId": "response-field-added",
+    "severity": "Info",
+    "method": "GET",
+    "path": "/customers/{id}",
+    "location": "response 200 `sources[].last4`",
+    "message": "New field `sources[].last4` in the 200 response."
+  },
+  {
+    "ruleId": "response-status-removed",
+    "severity": "Breaking",
+    "method": "POST",
+    "path": "/customers/{id}/archive",
+    "location": "response 202",
+    "message": "Success response 202 removed."
+  },
+  {
+    "ruleId": "response-status-added",
+    "severity": "Info",
+    "method": "POST",
+    "path": "/customers/{id}/archive",
+    "location": "response 204",
+    "message": "New success response 204."
+  }
+]

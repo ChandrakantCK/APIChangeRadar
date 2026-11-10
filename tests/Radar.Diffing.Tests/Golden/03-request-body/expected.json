@@ -1,0 +1,58 @@
+[
+  {
+    "ruleId": "request-field-became-required",
+    "severity": "Breaking",
+    "method": "POST",
+    "path": "/customers",
+    "location": "request body `email`",
+    "message": "Request field `email` is now required."
+  },
+  {
+    "ruleId": "request-field-enum-value-removed",
+    "severity": "Breaking",
+    "method": "POST",
+    "path": "/customers",
+    "location": "request body `plan`",
+    "message": "The request body `plan` no longer accepts \"team\"."
+  },
+  {
+    "ruleId": "request-field-required-added",
+    "severity": "Breaking",
+    "method": "POST",
+    "path": "/customers",
+    "location": "request body `address.country`",
+    "message": "New required field `address.country` in the request body."
+  },
+  {
+    "ruleId": "request-field-required-added",
+    "severity": "Breaking",
+    "method": "POST",
+    "path": "/customers",
+    "location": "request body `currency`",
+    "message": "New required field `currency` in the request body."
+  },
+  {
+    "ruleId": "request-field-type-changed",
+    "severity": "Breaking",
+    "method": "POST",
+    "path": "/customers",
+    "location": "request body `tags[]`",
+    "message": "Type of request body `tags[]` changed from string to integer."
+  },
+  {
+    "ruleId": "request-field-removed",
+    "severity": "Warning",
+    "method": "POST",
+    "path": "/customers",
+    "location": "request body `legacy_flag`",
+    "message": "Request field `legacy_flag` was removed: requests that send it may be rejected or it is ignored."
+  },
+  {
+    "ruleId": "request-field-optional-added",
+    "severity": "Info",
+    "method": "POST",
+    "path": "/customers",
+    "location": "request body `metadata`",
+    "message": "New optional field `metadata` in the request body."
+  }
+]

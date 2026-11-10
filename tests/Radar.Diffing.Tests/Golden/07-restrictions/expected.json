@@ -1,0 +1,26 @@
+[
+  {
+    "ruleId": "parameter-became-enum",
+    "severity": "Breaking",
+    "method": "POST",
+    "path": "/accounts/{id}/reject",
+    "location": "query parameter `region`",
+    "message": "The query parameter `region` now only accepts \"ap\", \"au\", \"br\", \"ca\", \"de\", \"eu\", \"fr\", \"in\", \"jp\", \"mx\" and 2 more."
+  },
+  {
+    "ruleId": "request-field-became-enum",
+    "severity": "Breaking",
+    "method": "POST",
+    "path": "/accounts/{id}/reject",
+    "location": "request body `reason`",
+    "message": "The request body `reason` now only accepts \"fraud\", \"other\", \"terms_of_service\"."
+  },
+  {
+    "ruleId": "response-field-became-optional",
+    "severity": "Breaking",
+    "method": "POST",
+    "path": "/accounts/{id}/reject",
+    "location": "response 200 `score`",
+    "message": "Field `score` in the 200 response is no longer always present."
+  }
+]
