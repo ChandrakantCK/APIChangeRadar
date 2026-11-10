@@ -8,7 +8,8 @@ namespace Radar.Application.Watches
         string SpecUrl,
         DateTimeOffset CreatedAt,
         DateTimeOffset? LastCheckedAt,
-        string? LastCheckOutcome);
+        string? LastCheckOutcome,
+        string? LatestApiVersion);
 
     /// <summary>The current organization's watches plus how many its plan allows.</summary>
     public sealed record WatchList(int Used, int Limit, IReadOnlyList<WatchView> Items);

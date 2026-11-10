@@ -17,5 +17,8 @@ namespace Radar.Infrastructure.Crawling
 
         /// <summary>Downloads larger than this are abandoned (GitHub's spec is ~14 MB today).</summary>
         public long MaxSpecBytes { get; set; } = 50L * 1024 * 1024;
+
+        /// <summary>Snapshots kept per source; older ones are deleted to stay within the free database's space.</summary>
+        public int SnapshotsToKeep { get; set; } = 5;
     }
 }

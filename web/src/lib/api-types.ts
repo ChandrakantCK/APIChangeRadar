@@ -384,6 +384,7 @@ export interface components {
             /** Format: date-time */
             lastCheckedAt: null | string;
             lastCheckOutcome: null | string;
+            latestApiVersion: null | string;
         };
     };
     responses: never;

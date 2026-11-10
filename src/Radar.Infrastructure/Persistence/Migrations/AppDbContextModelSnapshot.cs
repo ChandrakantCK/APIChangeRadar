@@ -457,6 +457,64 @@ namespace Radar.Infrastructure.Persistence.Migrations
                     b.ToTable("organizations", (string)null);
                 });
 
+            modelBuilder.Entity("Radar.Domain.Snapshots.SpecSnapshot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ApiVersion")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("api_version");
+
+                    b.Property<long>("CanonicalLength")
+                        .HasColumnType("bigint")
+                        .HasColumnName("canonical_length");
+
+                    b.Property<DateTimeOffset>("CapturedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("captured_at");
+
+                    b.Property<byte[]>("CompressedContent")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("compressed_content");
+
+                    b.Property<Guid>("CrawlRunId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("crawl_run_id");
+
+                    b.Property<string>("Hash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character(64)")
+                        .HasColumnName("hash")
+                        .IsFixedLength();
+
+                    b.Property<Guid>("SpecSourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("spec_source_id");
+
+                    b.Property<string>("SpecVersion")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("spec_version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_spec_snapshots");
+
+                    b.HasIndex("CrawlRunId")
+                        .HasDatabaseName("ix_spec_snapshots_crawl_run_id");
+
+                    b.HasIndex("SpecSourceId", "CapturedAt")
+                        .HasDatabaseName("ix_spec_snapshots_spec_source_id_captured_at");
+
+                    b.ToTable("spec_snapshots", (string)null);
+                });
+
             modelBuilder.Entity("Radar.Domain.Watches.Watch", b =>
                 {
                     b.Property<Guid>("Id")
@@ -711,6 +769,23 @@ namespace Radar.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_memberships_users_user_id");
+                });
+
+            modelBuilder.Entity("Radar.Domain.Snapshots.SpecSnapshot", b =>
+                {
+                    b.HasOne("Radar.Domain.Crawling.CrawlRun", null)
+                        .WithMany()
+                        .HasForeignKey("CrawlRunId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_spec_snapshots_crawl_runs_crawl_run_id");
+
+                    b.HasOne("Radar.Domain.Catalog.SpecSource", null)
+                        .WithMany()
+                        .HasForeignKey("SpecSourceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_spec_snapshots_spec_sources_spec_source_id");
                 });
 
             modelBuilder.Entity("Radar.Domain.Watches.Watch", b =>

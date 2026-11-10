@@ -121,7 +121,12 @@ namespace Radar.Infrastructure.Watches
             select new WatchView(
                 w.Id, s.Id, p.Name, s.Name, s.SpecUrl, w.CreatedAt,
                 lastRun == null ? null : lastRun.StartedAt,
-                lastRun == null ? null : lastRun.Outcome.ToString());
+                lastRun == null ? null : lastRun.Outcome.ToString(),
+                db.SpecSnapshots
+                    .Where(x => x.SpecSourceId == s.Id)
+                    .OrderByDescending(x => x.CapturedAt)
+                    .Select(x => x.ApiVersion)
+                    .FirstOrDefault());
 
         private Guid RequireOrganization() =>
             current.OrganizationId
