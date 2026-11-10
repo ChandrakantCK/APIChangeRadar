@@ -19,7 +19,8 @@ namespace Radar.Infrastructure.Crawling
         DateTimeOffset? LastModified = null,
         long ContentLength = 0,
         string? ContentHash = null,
-        string? Error = null);
+        string? Error = null,
+        byte[]? Content = null);
 
     /// <summary>
     /// Downloads a spec politely: identifies itself, asks "has it changed since this version?",
@@ -71,24 +72,25 @@ namespace Radar.Infrastructure.Crawling
                     return TooLarge(status, settings.MaxSpecBytes);
                 }
 
-                // Hash while streaming: memory stays at one small buffer however big the spec is.
+                // Read in chunks, hashing as we go, and stop as soon as the cap is passed.
+                // The body is kept (the snapshot needs it), so the cap is also the memory limit per download.
                 await using var body = await response.Content.ReadAsStreamAsync(timeout.Token);
+                using var content = new MemoryStream(capacity: (int)Math.Min(response.Content.Headers.ContentLength ?? 0, settings.MaxSpecBytes));
                 using var sha256 = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
                 var buffer = ArrayPool<byte>.Shared.Rent(81_920);
-                long total = 0;
                 try
                 {
                     int read;
                     while ((read = await body.ReadAsync(buffer, timeout.Token)) > 0)
                     {
-                        total += read;
-                        if (total > settings.MaxSpecBytes)
+                        if (content.Length + read > settings.MaxSpecBytes)
                         {
                             // No (or a wrong) Content-Length header: the cap still holds.
                             return TooLarge(status, settings.MaxSpecBytes);
                         }
 
                         sha256.AppendData(buffer, 0, read);
+                        content.Write(buffer, 0, read);
                     }
                 }
                 finally
@@ -101,8 +103,9 @@ namespace Radar.Infrastructure.Crawling
                     status,
                     response.Headers.ETag?.ToString(),
                     response.Content.Headers.LastModified,
-                    total,
-                    Convert.ToHexStringLower(sha256.GetHashAndReset()));
+                    content.Length,
+                    Convert.ToHexStringLower(sha256.GetHashAndReset()),
+                    Content: content.ToArray());
             }
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {

@@ -3,7 +3,10 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Radar.Application.Crawling;
 using Radar.Domain.Crawling;
+using Radar.Domain.Snapshots;
+using Radar.Diffing.Normalization;
 using Radar.Infrastructure.Persistence;
+using Radar.Infrastructure.Snapshots;
 
 namespace Radar.Infrastructure.Crawling
 {
@@ -56,31 +59,94 @@ namespace Radar.Infrastructure.Crawling
                 .OrderByDescending(r => r.StartedAt)
                 .FirstOrDefaultAsync(cancellationToken);
 
+            // Only the hash: never load the stored content just to compare.
+            var latestSnapshotHash = await db.SpecSnapshots
+                .Where(s => s.SpecSourceId == sourceId)
+                .OrderByDescending(s => s.CapturedAt)
+                .Select(s => s.Hash)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            // Without a snapshot we need the body, so don't let the server answer "304, you already have it".
+            var askIfChanged = latestSnapshotHash is not null ? previous : null;
+
             var startedAt = time.GetUtcNow();
             var started = time.GetTimestamp();
-            var result = await fetcher.FetchAsync(source.SpecUrl, previous?.ETag, previous?.LastModified, cancellationToken);
+            var result = await fetcher.FetchAsync(source.SpecUrl, askIfChanged?.ETag, askIfChanged?.LastModified, cancellationToken);
             var duration = time.GetElapsedTime(started);
 
-            var run = result.Kind switch
+            NormalizedSpec? normalized = null;
+            CrawlRun run;
+            switch (result.Kind)
             {
-                FetchKind.Downloaded => CrawlRun.Downloaded(
-                    sourceId, startedAt, duration,
-                    changed: result.ContentHash != previous?.ContentHash,
-                    result.HttpStatus!.Value, result.ETag, result.LastModified, result.ContentLength, result.ContentHash!),
-                FetchKind.NotModified when previous is not null => CrawlRun.NotModified(sourceId, startedAt, duration, previous),
-                FetchKind.NotModified => CrawlRun.Failed(sourceId, startedAt, duration, 304, "304 Not Modified, but we have never downloaded it."),
-                _ => CrawlRun.Failed(sourceId, startedAt, duration, result.HttpStatus, result.Error ?? "Unknown error."),
-            };
+                case FetchKind.Downloaded:
+                    var rawChanged = result.ContentHash != previous?.ContentHash;
+                    try
+                    {
+                        if (rawChanged || latestSnapshotHash is null)
+                        {
+                            normalized = SpecNormalizer.Normalize(result.Content!);
+                        }
+
+                        run = CrawlRun.Downloaded(
+                            sourceId, startedAt, duration, rawChanged,
+                            result.HttpStatus!.Value, result.ETag, result.LastModified, result.ContentLength, result.ContentHash!);
+                    }
+                    catch (SpecNormalizationException ex)
+                    {
+                        run = CrawlRun.Failed(sourceId, startedAt, duration, result.HttpStatus, $"Not a usable OpenAPI document: {ex.Message}");
+                    }
+
+                    break;
+                case FetchKind.NotModified when previous is not null:
+                    run = CrawlRun.NotModified(sourceId, startedAt, duration, previous);
+                    break;
+                case FetchKind.NotModified:
+                    run = CrawlRun.Failed(sourceId, startedAt, duration, 304, "304 Not Modified, but we have never downloaded it.");
+                    break;
+                default:
+                    run = CrawlRun.Failed(sourceId, startedAt, duration, result.HttpStatus, result.Error ?? "Unknown error.");
+                    break;
+            }
 
             db.CrawlRuns.Add(run);
+
+            // Different canonical hash = the API description really changed (not just its formatting): keep it.
+            var snapshotTaken = normalized is not null && normalized.Hash != latestSnapshotHash;
+            if (snapshotTaken)
+            {
+                db.SpecSnapshots.Add(new SpecSnapshot(
+                    sourceId, run.Id, startedAt, normalized!.Hash, normalized.SpecVersion, normalized.ApiVersion,
+                    normalized.CanonicalJson.Length, SnapshotCompression.Compress(normalized.CanonicalJson)));
+            }
+
             await db.SaveChangesAsync(cancellationToken);
 
+            if (snapshotTaken)
+            {
+                await DeleteOldSnapshotsAsync(sourceId, cancellationToken);
+            }
+
             logger.LogInformation(
-                "Crawled {Source}: {Outcome} (HTTP {Status}, {Bytes} bytes, {DurationMs} ms){Error}",
+                "Crawled {Source}: {Outcome} (HTTP {Status}, {Bytes} bytes, {DurationMs} ms){Snapshot}{Error}",
                 source.Name, run.Outcome, run.HttpStatus, run.ContentLength, run.DurationMs,
+                snapshotTaken ? $", new snapshot {normalized!.SpecVersion} v{normalized.ApiVersion}" : string.Empty,
                 run.Error is null ? string.Empty : $" - {run.Error}");
 
             return run.Outcome;
+        }
+
+        private async Task DeleteOldSnapshotsAsync(Guid sourceId, CancellationToken cancellationToken)
+        {
+            var keep = db.SpecSnapshots
+                .Where(s => s.SpecSourceId == sourceId)
+                .OrderByDescending(s => s.CapturedAt)
+                .Take(options.Value.SnapshotsToKeep)
+                .Select(s => s.Id);
+
+            // One DELETE statement in the database; nothing is loaded into memory.
+            await db.SpecSnapshots
+                .Where(s => s.SpecSourceId == sourceId && !keep.Contains(s.Id))
+                .ExecuteDeleteAsync(cancellationToken);
         }
     }
 }

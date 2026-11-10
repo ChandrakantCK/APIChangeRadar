@@ -115,6 +115,7 @@ export default function WatchesPage() {
               <span>
                 <span className="font-medium">{w.providerName}</span>
                 <span className="text-gray-500"> · {w.sourceName}</span>
+                {w.latestApiVersion && <span className="text-gray-500"> · version {w.latestApiVersion}</span>}
                 <span className="block text-xs text-gray-500">
                   {w.lastCheckedAt
                     ? `Last checked ${new Date(w.lastCheckedAt).toLocaleString()} · ${describeOutcome(w.lastCheckOutcome)}`

@@ -11,10 +11,12 @@ using Radar.Application.Crawling;
 using Radar.Application.Watches;
 using Radar.Domain.Catalog;
 using Radar.Domain.Crawling;
+using Radar.Domain.Snapshots;
 using Radar.Domain.Organizations;
 using Radar.Domain.Watches;
 using Radar.Infrastructure.Crawling;
 using Radar.Infrastructure.Persistence;
+using Radar.Infrastructure.Snapshots;
 using Radar.Integration.Tests.Infrastructure;
 
 namespace Radar.Integration.Tests.Crawling
@@ -23,6 +25,7 @@ namespace Radar.Integration.Tests.Crawling
     public class CrawlerTests
     {
         private const int MaxSpecBytes = 1_000;
+        private const string MinimalSpec = """{"openapi":"3.1.0","info":{"title":"Test","version":"1"},"paths":{}}""";
 
         private readonly StubSpecServer _server = new();
         private readonly WebApplicationFactory<Program> _app;
@@ -34,6 +37,7 @@ namespace Radar.Integration.Tests.Crawling
             {
                 builder.UseSetting("Crawler:RequestTimeoutSeconds", "1");
                 builder.UseSetting("Crawler:MaxSpecBytes", MaxSpecBytes.ToString());
+                builder.UseSetting("Crawler:SnapshotsToKeep", "2");
                 builder.ConfigureTestServices(services =>
                     services.AddHttpClient(SpecFetcher.HttpClientName).ConfigurePrimaryHttpMessageHandler(() => _server));
             });
@@ -205,7 +209,7 @@ namespace Radar.Integration.Tests.Crawling
             var recent = await CreateSourceAsync(watched: true);
             foreach (var url in new[] { due.Url, unwatched.Url, recent.Url })
             {
-                _server.Map(url, _ => Spec("{}"));
+                _server.Map(url, _ => Spec(MinimalSpec));
             }
 
             await CrawlAsync(recent.SourceId); // tried moments ago: not due for another hour
@@ -225,7 +229,7 @@ namespace Radar.Integration.Tests.Crawling
         {
             var client = await TestAccounts.CreateSignedInClientAsync(_app);
             var (sourceId, url) = await CreateSourceAsync();
-            _server.Map(url, _ => Spec("{}"));
+            _server.Map(url, _ => Spec(MinimalSpec));
             (await client.PostAsJsonAsync("/organizations/current/watches", new { sourceId })).EnsureSuccessStatusCode();
 
             Assert.Null((await client.GetFromJsonAsync<WatchList>("/organizations/current/watches"))!.Items.Single().LastCheckedAt);
@@ -235,6 +239,109 @@ namespace Radar.Integration.Tests.Crawling
             var watch = (await client.GetFromJsonAsync<WatchList>("/organizations/current/watches"))!.Items.Single();
             Assert.NotNull(watch.LastCheckedAt);
             Assert.Equal("Changed", watch.LastCheckOutcome);
+            Assert.Equal("1", watch.LatestApiVersion);
+        }
+
+        private async Task<List<SpecSnapshot>> SnapshotsAsync(Guid sourceId)
+        {
+            using var scope = _app.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            return await db.SpecSnapshots.Where(s => s.SpecSourceId == sourceId).OrderBy(s => s.CapturedAt).ToListAsync();
+        }
+
+        private static string SpecWithPaths(string version, params string[] paths) =>
+            "{\"openapi\":\"3.0.3\",\"info\":{\"title\":\"Test\",\"version\":\"" + version + "\"},\"paths\":{"
+            + string.Join(",", paths.Select(p => "\"" + p + "\":{}")) + "}}";
+
+        [Fact]
+        public async Task The_first_download_is_stored_as_a_compressed_canonical_snapshot()
+        {
+            var (sourceId, url) = await CreateSourceAsync();
+            _server.Map(url, _ => Spec("""
+                {
+                  "paths": {},
+                  "info": { "version": "2024-06-20", "title": "Test" },
+                  "openapi": "3.1.0"
+                }
+                """));
+
+            await CrawlAsync(sourceId);
+
+            var snapshot = Assert.Single(await SnapshotsAsync(sourceId));
+            var canonical = """{"info":{"title":"Test","version":"2024-06-20"},"openapi":"3.1.0","paths":{}}""";
+            Assert.Equal(canonical, Encoding.UTF8.GetString(SnapshotCompression.Decompress(snapshot.CompressedContent)));
+            Assert.Equal(Sha256(canonical), snapshot.Hash);
+            Assert.Equal("OpenAPI 3.1.0", snapshot.SpecVersion);
+            Assert.Equal("2024-06-20", snapshot.ApiVersion);
+            Assert.Equal((await RunsAsync(sourceId)).Single().Id, snapshot.CrawlRunId);
+        }
+
+        [Fact]
+        public async Task A_formatting_only_change_takes_no_new_snapshot()
+        {
+            var (sourceId, url) = await CreateSourceAsync();
+            var pretty = false;
+            _server.Map(url, _ => Spec(pretty
+                ? """{ "paths" : { }, "openapi" : "3.1.0", "info" : { "version" : "1", "title" : "Test" } }"""
+                : MinimalSpec));
+
+            await CrawlAsync(sourceId);
+            pretty = true;
+
+            Assert.Equal(CrawlOutcome.Changed, await CrawlAsync(sourceId)); // the bytes differ...
+            Assert.Single(await SnapshotsAsync(sourceId));                  // ...the API description does not
+        }
+
+        [Fact]
+        public async Task A_real_change_takes_a_new_snapshot_and_only_the_newest_are_kept()
+        {
+            var (sourceId, url) = await CreateSourceAsync();
+            var version = 1;
+            _server.Map(url, _ => Spec(SpecWithPaths(version.ToString(), Enumerable.Range(1, version).Select(i => $"/v{i}").ToArray())));
+
+            for (; version <= 3; version++)
+            {
+                await CrawlAsync(sourceId);
+            }
+
+            // SnapshotsToKeep is 2 in these tests: version 1 was deleted.
+            Assert.Equal(["2", "3"], (await SnapshotsAsync(sourceId)).Select(s => s.ApiVersion));
+        }
+
+        [Theory]
+        [InlineData("<html><body>Not found</body></html>")]
+        [InlineData("""{"title":"just some JSON"}""")]
+        public async Task Documents_that_are_not_openapi_fail_and_take_no_snapshot(string body)
+        {
+            var (sourceId, url) = await CreateSourceAsync();
+            _server.Map(url, _ => Spec(body));
+
+            Assert.Equal(CrawlOutcome.Failed, await CrawlAsync(sourceId));
+            Assert.StartsWith("Not a usable OpenAPI document", (await RunsAsync(sourceId)).Single().Error);
+            Assert.Empty(await SnapshotsAsync(sourceId));
+        }
+
+        [Fact]
+        public async Task Without_a_snapshot_the_crawler_downloads_in_full_even_if_it_has_an_etag()
+        {
+            // Like production right after this feature shipped: earlier crawls stored an ETag but no snapshot.
+            var (sourceId, url) = await CreateSourceAsync();
+            using (var scope = _app.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                db.CrawlRuns.Add(CrawlRun.Downloaded(
+                    sourceId, DateTimeOffset.UtcNow.AddHours(-2), TimeSpan.FromSeconds(1), changed: true,
+                    200, "\"v1\"", null, MinimalSpec.Length, Sha256(MinimalSpec)));
+                await db.SaveChangesAsync();
+            }
+
+            _server.Map(url, request => request.Headers.IfNoneMatch.Count > 0
+                ? new HttpResponseMessage(HttpStatusCode.NotModified)
+                : Spec(MinimalSpec, "\"v1\""));
+
+            Assert.Equal(CrawlOutcome.Unchanged, await CrawlAsync(sourceId));
+            Assert.Null(_server.RequestsTo(url).Single().IfNoneMatch);
+            Assert.Single(await SnapshotsAsync(sourceId));
         }
 
         // Streams its bytes without a Content-Length header, like a chunked response.

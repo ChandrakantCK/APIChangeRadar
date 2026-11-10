@@ -6,6 +6,7 @@ using Radar.Application.Abstractions;
 using Radar.Domain.Auditing;
 using Radar.Domain.Catalog;
 using Radar.Domain.Crawling;
+using Radar.Domain.Snapshots;
 using Radar.Domain.Watches;
 using Radar.Domain.Common;
 using Radar.Domain.Organizations;
@@ -26,6 +27,7 @@ namespace Radar.Infrastructure.Persistence
         public DbSet<SpecSource> SpecSources => Set<SpecSource>();
         public DbSet<Watch> Watches => Set<Watch>();
         public DbSet<CrawlRun> CrawlRuns => Set<CrawlRun>();
+        public DbSet<SpecSnapshot> SpecSnapshots => Set<SpecSnapshot>();
 
         // Read by the tenant query filter each time a query runs (EF Core re-evaluates context members).
         private Guid? CurrentOrganizationId => currentOrganization.OrganizationId;
