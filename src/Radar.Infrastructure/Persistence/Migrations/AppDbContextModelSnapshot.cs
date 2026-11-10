@@ -333,6 +333,126 @@ namespace Radar.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Radar.Domain.Changes.ApiChange", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ChangeSetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("change_set_id");
+
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("location");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("message");
+
+                    b.Property<string>("Method")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("method");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("path");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer")
+                        .HasColumnName("position");
+
+                    b.Property<string>("RuleId")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("rule_id");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("severity");
+
+                    b.HasKey("Id")
+                        .HasName("pk_api_changes");
+
+                    b.HasIndex("ChangeSetId", "Position")
+                        .HasDatabaseName("ix_api_changes_change_set_id_position");
+
+                    b.ToTable("api_changes", (string)null);
+                });
+
+            modelBuilder.Entity("Radar.Domain.Changes.ChangeSet", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("BreakingCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("breaking_count");
+
+                    b.Property<DateTimeOffset>("DetectedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("detected_at");
+
+                    b.Property<string>("FromApiVersion")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("from_api_version");
+
+                    b.Property<Guid?>("FromSnapshotId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("from_snapshot_id");
+
+                    b.Property<int>("InfoCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("info_count");
+
+                    b.Property<Guid>("SpecSourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("spec_source_id");
+
+                    b.Property<string>("ToApiVersion")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("to_api_version");
+
+                    b.Property<Guid?>("ToSnapshotId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("to_snapshot_id");
+
+                    b.Property<int>("WarningCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("warning_count");
+
+                    b.HasKey("Id")
+                        .HasName("pk_change_sets");
+
+                    b.HasIndex("FromSnapshotId")
+                        .HasDatabaseName("ix_change_sets_from_snapshot_id");
+
+                    b.HasIndex("ToSnapshotId")
+                        .HasDatabaseName("ix_change_sets_to_snapshot_id");
+
+                    b.HasIndex("SpecSourceId", "DetectedAt")
+                        .HasDatabaseName("ix_change_sets_spec_source_id_detected_at");
+
+                    b.ToTable("change_sets", (string)null);
+                });
+
             modelBuilder.Entity("Radar.Domain.Crawling.CrawlRun", b =>
                 {
                     b.Property<Guid>("Id")
@@ -744,6 +864,38 @@ namespace Radar.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_spec_sources_api_providers_provider_id");
                 });
 
+            modelBuilder.Entity("Radar.Domain.Changes.ApiChange", b =>
+                {
+                    b.HasOne("Radar.Domain.Changes.ChangeSet", null)
+                        .WithMany("Changes")
+                        .HasForeignKey("ChangeSetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_api_changes_change_sets_change_set_id");
+                });
+
+            modelBuilder.Entity("Radar.Domain.Changes.ChangeSet", b =>
+                {
+                    b.HasOne("Radar.Domain.Snapshots.SpecSnapshot", null)
+                        .WithMany()
+                        .HasForeignKey("FromSnapshotId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_change_sets_spec_snapshots_from_snapshot_id");
+
+                    b.HasOne("Radar.Domain.Catalog.SpecSource", null)
+                        .WithMany()
+                        .HasForeignKey("SpecSourceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_change_sets_spec_sources_spec_source_id");
+
+                    b.HasOne("Radar.Domain.Snapshots.SpecSnapshot", null)
+                        .WithMany()
+                        .HasForeignKey("ToSnapshotId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_change_sets_spec_snapshots_to_snapshot_id");
+                });
+
             modelBuilder.Entity("Radar.Domain.Crawling.CrawlRun", b =>
                 {
                     b.HasOne("Radar.Domain.Catalog.SpecSource", null)
@@ -818,6 +970,11 @@ namespace Radar.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Radar.Domain.Catalog.ApiProvider", b =>
                 {
                     b.Navigation("Sources");
+                });
+
+            modelBuilder.Entity("Radar.Domain.Changes.ChangeSet", b =>
+                {
+                    b.Navigation("Changes");
                 });
 #pragma warning restore 612, 618
         }

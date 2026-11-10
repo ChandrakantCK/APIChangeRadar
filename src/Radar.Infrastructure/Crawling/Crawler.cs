@@ -2,9 +2,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Radar.Application.Crawling;
+using Radar.Diffing;
+using Radar.Diffing.Changes;
+using Radar.Diffing.Normalization;
+using Radar.Domain.Changes;
 using Radar.Domain.Crawling;
 using Radar.Domain.Snapshots;
-using Radar.Diffing.Normalization;
 using Radar.Infrastructure.Persistence;
 using Radar.Infrastructure.Snapshots;
 
@@ -60,11 +63,12 @@ namespace Radar.Infrastructure.Crawling
                 .FirstOrDefaultAsync(cancellationToken);
 
             // Only the hash: never load the stored content just to compare.
-            var latestSnapshotHash = await db.SpecSnapshots
+            var latestSnapshot = await db.SpecSnapshots
                 .Where(s => s.SpecSourceId == sourceId)
                 .OrderByDescending(s => s.CapturedAt)
-                .Select(s => s.Hash)
+                .Select(s => new { s.Id, s.Hash, s.ApiVersion })
                 .FirstOrDefaultAsync(cancellationToken);
+            var latestSnapshotHash = latestSnapshot?.Hash;
 
             // Without a snapshot we need the body, so don't let the server answer "304, you already have it".
             var askIfChanged = latestSnapshotHash is not null ? previous : null;
@@ -112,13 +116,27 @@ namespace Radar.Infrastructure.Crawling
 
             // Different canonical hash = the API description really changed (not just its formatting): keep it.
             var snapshotTaken = normalized is not null && normalized.Hash != latestSnapshotHash;
+            ChangeSet? changeSet = null;
             if (snapshotTaken)
             {
-                db.SpecSnapshots.Add(new SpecSnapshot(
+                var snapshot = new SpecSnapshot(
                     sourceId, run.Id, startedAt, normalized!.Hash, normalized.SpecVersion, normalized.ApiVersion,
-                    normalized.CanonicalJson.Length, SnapshotCompression.Compress(normalized.CanonicalJson)));
+                    normalized.CanonicalJson.Length, SnapshotCompression.Compress(normalized.CanonicalJson));
+                db.SpecSnapshots.Add(snapshot);
+
+                // The first snapshot is the baseline: there is nothing to compare it with.
+                if (latestSnapshot is not null)
+                {
+                    changeSet = await DiffAsync(
+                        sourceId, latestSnapshot.Id, latestSnapshot.ApiVersion, snapshot, normalized.CanonicalJson, source.Name, cancellationToken);
+                    if (changeSet is not null)
+                    {
+                        db.ChangeSets.Add(changeSet);
+                    }
+                }
             }
 
+            // Run, snapshot and changes are saved together: a crash can't leave a snapshot whose changes were never recorded.
             await db.SaveChangesAsync(cancellationToken);
 
             if (snapshotTaken)
@@ -127,12 +145,46 @@ namespace Radar.Infrastructure.Crawling
             }
 
             logger.LogInformation(
-                "Crawled {Source}: {Outcome} (HTTP {Status}, {Bytes} bytes, {DurationMs} ms){Snapshot}{Error}",
+                "Crawled {Source}: {Outcome} (HTTP {Status}, {Bytes} bytes, {DurationMs} ms){Snapshot}{Changes}{Error}",
                 source.Name, run.Outcome, run.HttpStatus, run.ContentLength, run.DurationMs,
                 snapshotTaken ? $", new snapshot {normalized!.SpecVersion} v{normalized.ApiVersion}" : string.Empty,
+                changeSet is null ? string.Empty
+                    : $", {changeSet.BreakingCount} breaking / {changeSet.WarningCount} warning / {changeSet.InfoCount} info changes",
                 run.Error is null ? string.Empty : $" - {run.Error}");
 
             return run.Outcome;
+        }
+
+        // Compares the previous snapshot with the new one. Null when nothing a client would notice changed
+        // (descriptions, examples) or when the differ fails: the snapshot is still kept either way.
+        private async Task<ChangeSet?> DiffAsync(
+            Guid sourceId, Guid previousSnapshotId, string? previousApiVersion,
+            SpecSnapshot snapshot, byte[] canonicalJson, string sourceName, CancellationToken cancellationToken)
+        {
+            var previousContent = await db.SpecSnapshots
+                .Where(s => s.Id == previousSnapshotId)
+                .Select(s => s.CompressedContent)
+                .SingleAsync(cancellationToken);
+
+            IReadOnlyList<SpecChange> changes;
+            try
+            {
+                changes = SpecDiffer.Diff(SnapshotCompression.Decompress(previousContent), canonicalJson);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogError(ex, "Could not compare the new snapshot of {Source} with the previous one", sourceName);
+                return null;
+            }
+
+            if (changes.Count == 0)
+            {
+                return null;
+            }
+
+            return new ChangeSet(
+                sourceId, previousSnapshotId, snapshot.Id, snapshot.CapturedAt, previousApiVersion, snapshot.ApiVersion,
+                changes.Select(c => new ApiChange(c.RuleId, c.Severity, c.Method, c.Path, c.Location, c.Message)).ToList());
         }
 
         private async Task DeleteOldSnapshotsAsync(Guid sourceId, CancellationToken cancellationToken)
