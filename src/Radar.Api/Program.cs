@@ -46,6 +46,7 @@ app.MapMeEndpoints();
 app.MapOrganizationEndpoints();
 app.MapCatalogEndpoints();
 app.MapWatchEndpoints();
+app.MapChangeEndpoints();
 app.MapDiagnosticsEndpoints();
 
 app.Run();

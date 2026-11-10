@@ -1,17 +1,7 @@
+using Radar.Domain.Changes;
+
 namespace Radar.Diffing.Changes
 {
-    public enum ChangeSeverity
-    {
-        /// <summary>Existing clients will fail: something they send or read is gone or different.</summary>
-        Breaking,
-
-        /// <summary>May break some clients: deprecations, removed optional inputs, new response enum values.</summary>
-        Warning,
-
-        /// <summary>Safe additions.</summary>
-        Info
-    }
-
     /// <summary>
     /// One difference between two versions of an API description.
     /// </summary>

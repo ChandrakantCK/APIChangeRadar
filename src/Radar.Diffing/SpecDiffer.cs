@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Radar.Diffing.Changes;
 using Radar.Diffing.OpenApi;
+using Radar.Domain.Changes;
 
 namespace Radar.Diffing
 {

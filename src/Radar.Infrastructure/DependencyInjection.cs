@@ -17,6 +17,8 @@ using Radar.Infrastructure.Catalog;
 using Radar.Application.Watches;
 using Radar.Infrastructure.Watches;
 using Radar.Infrastructure.Crawling;
+using Radar.Application.Changes;
+using Radar.Infrastructure.Changes;
 
 namespace Radar.Infrastructure
 {
@@ -98,6 +100,7 @@ namespace Radar.Infrastructure
             services.AddScoped<IOrganizationService, OrganizationService>();
             services.AddScoped<ICatalogService, CatalogService>();
             services.AddScoped<IWatchService, WatchService>();
+            services.AddScoped<IChangeFeedService, ChangeFeedService>();
             services.AddScoped<IAccountService, AccountService>();
 
             services.AddCrawling(configuration);
