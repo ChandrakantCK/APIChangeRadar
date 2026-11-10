@@ -1,0 +1,30 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Customers", "version": "1" },
+  "paths": {
+    "/customers": {
+      "post": {
+        "requestBody": {
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CustomerInput" } } }
+        },
+        "responses": { "201": { "description": "Created" } }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CustomerInput": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "email": { "type": "string" },
+          "plan": { "type": "string", "enum": ["free", "pro", "team"] },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "address": { "type": "object", "properties": { "city": { "type": "string" } } },
+          "legacy_flag": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Accounts", "version": "2" },
+  "paths": {
+    "/accounts/{id}/reject": {
+      "post": {
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } },
+          {
+            "name": "region",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["ap", "au", "br", "ca", "de", "eu", "fr", "in", "jp", "mx", "uk", "us"] }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["reason"],
+                "properties": { "reason": { "type": "string", "enum": ["fraud", "other", "terms_of_service"] } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["id", "note"],
+                  "properties": {
+                    "id": { "type": "string" },
+                    "score": { "type": "number" },
+                    "note": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

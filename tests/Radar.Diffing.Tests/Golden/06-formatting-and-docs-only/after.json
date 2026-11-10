@@ -1,0 +1,27 @@
+{
+  "paths": {
+    "/items/{id}": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": { "price": { "type": "number" }, "id": { "type": "string" } },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Item found"
+          }
+        },
+        "parameters": [
+          { "in": "path", "name": "id", "schema": { "type": "string" }, "required": true },
+          { "schema": { "enum": ["b", "a"], "type": "string" }, "in": "query", "name": "expand" }
+        ]
+      }
+    }
+  },
+  "info": { "version": "1", "title": "Same" },
+  "openapi": "3.0.3"
+}

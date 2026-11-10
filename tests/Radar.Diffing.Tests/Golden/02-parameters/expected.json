@@ -1,0 +1,50 @@
+[
+  {
+    "ruleId": "parameter-became-required",
+    "severity": "Breaking",
+    "method": "GET",
+    "path": "/orders",
+    "location": "query parameter `cursor`",
+    "message": "The query parameter `cursor` is now required."
+  },
+  {
+    "ruleId": "parameter-enum-value-removed",
+    "severity": "Breaking",
+    "method": "GET",
+    "path": "/orders",
+    "location": "query parameter `status`",
+    "message": "The query parameter `status` no longer accepts \"pending\"."
+  },
+  {
+    "ruleId": "parameter-required-added",
+    "severity": "Breaking",
+    "method": "GET",
+    "path": "/orders",
+    "location": "query parameter `account`",
+    "message": "New required query parameter `account`: existing requests don't send it."
+  },
+  {
+    "ruleId": "parameter-type-changed",
+    "severity": "Breaking",
+    "method": "GET",
+    "path": "/orders",
+    "location": "query parameter `limit`",
+    "message": "Type of query parameter `limit` changed from integer to string."
+  },
+  {
+    "ruleId": "parameter-removed",
+    "severity": "Warning",
+    "method": "GET",
+    "path": "/orders",
+    "location": "query parameter `legacy`",
+    "message": "The query parameter `legacy` was removed: requests that send it may be rejected or it is ignored."
+  },
+  {
+    "ruleId": "parameter-optional-added",
+    "severity": "Info",
+    "method": "GET",
+    "path": "/orders",
+    "location": "query parameter `expand`",
+    "message": "New optional query parameter `expand`."
+  }
+]
